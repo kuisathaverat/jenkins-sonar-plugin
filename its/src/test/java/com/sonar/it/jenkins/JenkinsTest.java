@@ -26,17 +26,16 @@ import com.sonar.orchestrator.build.SynchronousAnalyzer;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.Location;
 import com.sonar.orchestrator.locator.URLLocation;
-
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.sonar.wsclient.services.PropertyUpdateQuery;
 import org.sonar.wsclient.services.ResourceQuery;
+
 import static org.fest.assertions.Assertions.assertThat;
 import static org.junit.Assume.assumeFalse;
 
@@ -62,8 +61,9 @@ public class JenkinsTest {
       .installPlugin(URLLocation.create(new URL("http://mirrors.jenkins-ci.org/plugins/filesystem_scm/1.20/filesystem_scm.hpi")))
       .installPlugin(sqJenkinsPluginLocation)
       .configureMavenInstallation()
-      .configureSonarRunner2_4Installation()
-      .configureMsBuildSQScanner_installation()
+      // Single installation
+      .configureSQScannerInstallation("2.4", 0)
+      .configureMsBuildSQScanner_installation("2.0", 0)
       .configureSonarInstallation(orchestrator);
     jenkins.checkSavedSonarInstallation(orchestrator);
     jenkins.configureDefaultQG(orchestrator);
@@ -149,7 +149,7 @@ public class JenkinsTest {
     String projectKey = "abacus-runner";
     assertThat(orchestrator.getServer().getWsClient().find(ResourceQuery.create(projectKey))).isNull();
     jenkins
-      .newFreestyleJobWithSonarRunner(jobName, "-X", new File("projects", "abacus"),
+      .newFreestyleJobWithSQScanner(jobName, "-X", new File("projects", "abacus"), null,
         "sonar.projectKey", projectKey,
         "sonar.projectVersion", "1.0",
         "sonar.projectName", "Abacus",
@@ -162,31 +162,12 @@ public class JenkinsTest {
   }
 
   @Test
-  public void testFreestyleJobWithMsBuildSQRunner() {
-    File toolPath = new File(jenkins.getServer().getHome().getAbsolutePath() + File.separator + "tools" + File.separator + "hudson.plugins.sonar.MsBuildSQRunnerInstallation");
-    String jobName = "abacus-msbuild-sq-runner";
-    String projectKey = "abacus-msbuild-sq-runner";
-    assertThat(orchestrator.getServer().getWsClient().find(ResourceQuery.create(projectKey))).isNull();
-    BuildResult result = jenkins
-      .newFreestyleJobWithMsBuildSQRunner(jobName, null, new File("projects", "abacus"), projectKey, "Abacus with space", "1.0")
-      .executeJobQuietly(jobName);
-
-    assertThat(result.getLogs())
-      .contains(
-        "tools" + File.separator + "hudson.plugins.sonar.MsBuildSQRunnerInstallation" + File.separator + "SQ_runner" + File.separator
-          + "MSBuild.SonarQube.Runner.exe begin /k:abacus-msbuild-sq-runner \"/n:Abacus with space\" /v:1.0 /d:sonar.host.url="
-          + orchestrator.getServer().getUrl());
-
-    assertThat(toolPath).isDirectory();
-  }
-
-  @Test
   public void testFreestyleJobWithSonarRunnerAndBranch() throws Exception {
     String jobName = "abacus-runner-branch";
     String projectKey = "abacus-runner:branch";
     assertThat(orchestrator.getServer().getWsClient().find(ResourceQuery.create(projectKey))).isNull();
     BuildResult result = jenkins
-      .newFreestyleJobWithSonarRunner(jobName, "-X -Duseless=Y -e", new File("projects", "abacus"),
+      .newFreestyleJobWithSQScanner(jobName, "-X -Duseless=Y -e", new File("projects", "abacus"), null,
         "sonar.projectKey", "abacus-runner",
         "sonar.projectVersion", "1.0",
         "sonar.projectName", "Abacus",
@@ -211,7 +192,7 @@ public class JenkinsTest {
     assumeFalse(orchestrator.getServer().version().isGreaterThanOrEquals("5.2"));
     String jobName = "refresh-views";
     BuildResult result = jenkins
-      .newFreestyleJobWithSonarRunner(jobName, null, new File("projects", "abacus"), "sonar.task", "views")
+      .newFreestyleJobWithSQScanner(jobName, null, new File("projects", "abacus"), null, "sonar.task", "views")
       .executeJobQuietly(jobName);
     // Since views is not installed
     assertThat(result.getLogs()).contains("Task views does not exist");

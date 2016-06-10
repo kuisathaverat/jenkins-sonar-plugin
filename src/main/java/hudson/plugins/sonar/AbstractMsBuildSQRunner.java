@@ -47,6 +47,7 @@ import hudson.tasks.Builder;
 import jenkins.tasks.SimpleBuildStep;
 import hudson.AbortException;
 import hudson.EnvVars;
+import hudson.FilePath;
 
 import javax.annotation.Nullable;
 
@@ -92,8 +93,8 @@ public abstract class AbstractMsBuildSQRunner extends Builder implements SimpleB
     return name;
   }
 
-  protected String getExeName(MsBuildSQRunnerInstallation msBuildScanner, EnvVars env, Launcher launcher, TaskListener listener) throws IOException, InterruptedException {
-    MsBuildSQRunnerInstallation inst = BuilderUtils.getBuildTool(msBuildScanner, env, listener);
+  protected String getExeName(MsBuildSQRunnerInstallation msBuildScanner, EnvVars env, Launcher launcher, TaskListener listener,FilePath workspace) throws IOException, InterruptedException {
+    MsBuildSQRunnerInstallation inst = BuilderUtils.getBuildTool(msBuildScanner, env, listener, workspace);
 
     String exe;
     if (inst != null) {

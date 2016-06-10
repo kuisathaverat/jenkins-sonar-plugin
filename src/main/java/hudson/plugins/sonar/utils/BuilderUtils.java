@@ -44,6 +44,7 @@ import hudson.model.TaskListener;
 import hudson.scm.SCM;
 import hudson.slaves.NodeSpecific;
 import hudson.tools.ToolInstallation;
+import jenkins.model.Jenkins;
 import jenkins.triggers.SCMTriggerItem;
 
 import javax.annotation.Nullable;
@@ -57,9 +58,19 @@ public class BuilderUtils {
   }
 
   @Nullable
-  public static <T extends ToolInstallation & EnvironmentSpecific<T> & NodeSpecific<T>> T getBuildTool(@Nullable T tool, EnvVars env, TaskListener listener) throws IOException,
+  public static <T extends ToolInstallation & EnvironmentSpecific<T> & NodeSpecific<T>> T getBuildTool(@Nullable T tool, EnvVars env, TaskListener listener, FilePath workspace) throws IOException,
     InterruptedException {
-    Node node = Computer.currentComputer().getNode();
+    Computer currentComputer = Computer.currentComputer();
+    if(currentComputer == null){
+        Jenkins j = Jenkins.getInstance();
+        for (Computer c : j.getComputers()) {
+            if (c.getChannel() == workspace.getChannel()) {
+                currentComputer = j.getComputer(c.getName());
+                break;
+            }
+        }
+    }
+    Node node = currentComputer.getNode();
     if (tool == null || node == null) {
       return null;
     }
